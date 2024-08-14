@@ -14,14 +14,26 @@ const io = new Server(server,{
         credentials:true,
     }
 });
-
+//socket.io
 io.on("connection",(socket)=>{
 
-    console.log("User connected");
-    console.log("Id",socket.id);
-    socket.emit("Welcome",`Welcome to the server,${socket.id}`)
+    console.log("User connected",socket.id);
+    // socket.emit("welcome",`Welcome to the server.`);
+    // socket.broadcast.emit("Welcome",`${socket.id} joined the server.`)
 
-})
+     socket.on("message",({room,message})=>{
+        console.log({room,message});
+        io.to(room).emit('receive-message',message)
+     }) 
+
+    
+   
+
+    socket.on("disconnect",()=>{
+        console.log('User disconnected',socket.id)
+    });
+
+});
 
 
 app.get('/', (req, res) => {
@@ -42,3 +54,7 @@ app.get('/', (req, res) => {
 server.listen(port, () => {
     console.log(`Server is running on port ${port}`);
 });
+
+
+
+
