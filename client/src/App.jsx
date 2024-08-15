@@ -1,80 +1,96 @@
-import React, { useEffect, useState,useMemo } from 'react'
-import {io} from 'socket.io-client'
+import React, { useEffect, useState, useMemo } from 'react';
+import { io } from 'socket.io-client';
+import { Button, Container, Stack, TextField, Typography } from '@mui/material';
 
-import {Button, Container, TextField, Typography} from '@mui/material'
 const App = () => {
+    const socket = useMemo(() => io("http://localhost:3001", { withCredentials: true }), []);
+    const [roomname, setRoomname] = useState("");
+    const [message, setMessage] = useState("");
+    const [room, setRoom] = useState("");
+    const [socketId, setSocketId] = useState("");
+    const [messages, setMessages] = useState([]);
 
-  const socket =useMemo(()=>io("http://localhost:3000"),[]) 
-
-  const [message,setMessage] =useState("")
-  const[room,setRoom] =useState("")
-  const [socketId,setSocketId] =useState("")
- 
-
-  const handleSubmit =(e)=>{
-    e.preventDefault();
-    socket.emit("message",{message,room})
-    setMessage("")
-
-  }
-
-
-
-  useEffect(()=>{
-
-
-    socket.on("connect",()=>{
-      setSocketId(socket.id)
-      console.log('Connected',socket.id);
-    });
-
-    socket.on("Welcome",(s)=>{
-      console.log(s);
-    });
-
-    socket.on("receive-message",(data)=>{
-      console.log(data)
-    })
-
-    return ()=>{
-      socket.disconnect()
+    const handleSubmit = (e) => {
+        e.preventDefault();
+        socket.emit("message", { message, room });
+        setMessage("");
     };
 
-  },[])
+    const joinRoom = (e) => {
+        e.preventDefault();
+        socket.emit("join-room", roomname);
+        setRoomname('');
+    };
 
+    useEffect(() => {
+        socket.on("connect", () => {
+            setSocketId(socket.id);
+            console.log('Connected', socket.id);
+        });
 
-  return (
-   <Container maxWidth='sm'>
-    {/* <Typography variant='h1' component='div' gutterBottom>
-      Welcome to Socket.io
-    </Typography> */}
+        socket.on("receive-message", (data) => {
+            console.log(data);
+            setMessages((messages) => [...messages, data]);
+        });
 
-    <Typography variant='h6' component='div' gutterBottom>
+        socket.on("disconnect", () => {
+            console.log('Disconnected');
+        });
 
-      {socketId}
-    </Typography>
+        return () => {
+            socket.disconnect();
+        };
+    }, [socket]);
 
-   <form onSubmit={handleSubmit}>
-    <TextField
-    value={message} 
-    onChange={e=>setMessage(e.target.value)}id='outlined-basic' label='Outlined' variant='outlined'/>
+    return (
+        <Container maxWidth='sm'>
+            <Typography variant='h6' component='div' gutterBottom>
+                {socketId}
+            </Typography>
 
-<TextField
-    value={room} 
-    onChange={e=>setRoom(e.target.value)}id='outlined-basic' label='Room' variant='outlined'/>
+            <form onSubmit={joinRoom}>
+                <h5>Join Room</h5>
+                <TextField
+                    value={roomname}
+                    onChange={e => setRoomname(e.target.value)}
+                    id='outlined-basic'
+                    label='Room Name'
+                    variant='outlined'
+                />
+                <Button type='submit' variant='contained' color='primary'>
+                    Join
+                </Button>
+            </form>
 
+            <form onSubmit={handleSubmit}>
+                <TextField
+                    value={message}
+                    onChange={e => setMessage(e.target.value)}
+                    id='outlined-basic'
+                    label='Message'
+                    variant='outlined'
+                />
+                <TextField
+                    value={room}
+                    onChange={e => setRoom(e.target.value)}
+                    id='outlined-basic'
+                    label='Room'
+                    variant='outlined'
+                />
+                <Button type='submit' variant='contained' color='primary'>
+                    Send
+                </Button>
+            </form>
 
-    <Button type='submit' variant='contained' color='primary'>
-       Send
-    </Button>
-   </form>
+            <Stack>
+                {messages.map((m, i) => (
+                    <Typography key={i} variant='h6' component='div' gutterBottom>
+                        {m}
+                    </Typography>
+                ))}
+            </Stack>
+        </Container>
+    );
+};
 
-
-
-   </Container>
-    
-  )
-}
-
-
-export default App
+export default App;
